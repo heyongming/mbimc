@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+ "-//Apache Software Foundation//DTD Struts Configuration 2.3//EN" 
+ "struts-2.3.dtd">
+<struts>
+<!-- 
+	<package name="mbimc" namespace="/pc" extends="struts-default">
+
+	
+		  <action name="loginaAction" class="com.mbimc.pc.action.ActivityOptionaAction">
+			<result type="stream">
+				<param name="contentType">text/html</param>
+				<param name="inputName">bis</param>
+			</result>
+
+		</action>
+		<action name="getUserByPhone" class="com.mbimc.pc.action.ActivityOptionaAction"
+			method="getUserByPhone">
+				<result type="stream">
+				<param name="contentType">text/html</param>
+				<param name="inputName">bis</param>
+			</result>
+		</action>
+		<action name="getAllData" class="com.mbimc.pc.action.ActivityOptionaAction"
+			method="getUserAll">
+				<result type="stream">
+				<param name="contentType">text/html</param>
+				<param name="inputName">bis</param>
+			</result>
+		</action>
+	
+	</package>
+	<package name="mbimc1" namespace="/pc/charSec" extends="struts-default">
+
+	
+		  <action name="loginaAction" class="com.mbimc.pc.action.CharSecAction">
+			<result type="stream">
+				<param name="contentType">text/html</param>
+				<param name="inputName">bis</param>
+			</result>
+
+		</action>
+		<action name="getUserByPhone" class="com.mbimc.pc.action.CharSecAction"
+			method="getUserByPhone">
+				<result type="stream">
+				<param name="contentType">text/html</param>
+				<param name="inputName">bis</param>
+			</result>
+		</action>
+		<action name="getAllData" class="com.mbimc.pc.action.CharSecAction"
+			method="getUserAll">
+				<result type="stream">
+				<param name="contentType">text/html</param>
+				<param name="inputName">bis</param>
+			</result>
+		</action>
+	
+	</package>
+	
+	
+	 -->
+
+</struts>
