@@ -12,12 +12,17 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.struts2.ServletActionContext;
 import org.apache.struts2.StrutsStatics;
 
+import com.data.InitMusicDbo;
 import com.data.InitNewSDbo;
 import com.opensymphony.xwork2.ActionContext;
 import com.opensymphony.xwork2.ActionSupport;
 import com.opensymphony.xwork2.ModelDriven;
 import com.util.MessAgeUtil;
 import com.util.WeiXinCheckInit;
+import com.wx.entitys.Image;
+import com.wx.entitys.ImageMessage;
+import com.wx.entitys.Music;
+import com.wx.entitys.MusicMessage;
 import com.wx.entitys.NewsItem;
 import com.wx.entitys.NewsTextMessage;
 import com.wx.entitys.TextMessage;
@@ -61,7 +66,7 @@ public class WeiXinInitAction extends ActionSupport implements ModelDriven<WeiXi
 		String method = ServletActionContext.getRequest().getMethod();
 
 		if (method.equals("POST")) {// 注意全部大写
-			
+
 			HttpServletRequest request = (HttpServletRequest) ActionContext.getContext()
 					.get(StrutsStatics.HTTP_REQUEST);
 			ServiceAnswer(request);
@@ -90,22 +95,23 @@ public class WeiXinInitAction extends ActionSupport implements ModelDriven<WeiXi
 		try {
 			map = MessAgeUtil.xmlToMap(request);
 			TextMessage FromMessage = MessAgeUtil.mapToTextMessage(map);
-			System.out.println(FromMessage+"?"+MessAgeUtil.MESSAGE_EVNET);
+			System.out.println(FromMessage + "?" + MessAgeUtil.MESSAGE_EVNET);
 			if (FromMessage.getMsgType().equals("text")) {
 				if (FromMessage.getContent().equals("1")) {
-					List<NewsItem> news=InitNewSDbo.singleNewTextList();
-					msgNewsTextToResult(FromMessage,news);
+					List<NewsItem> news = InitNewSDbo.singleNewTextList();
+					msgNewsTextToResult(FromMessage, news);
 				} else if (FromMessage.getContent().equals("2")) {
-					List<NewsItem> news=InitNewSDbo.complexNewTextList();
-					msgNewsTextToResult(FromMessage,news);
+					List<NewsItem> news = InitNewSDbo.complexNewTextList();
+					msgNewsTextToResult(FromMessage, news);
 				} else if (FromMessage.getContent().equals("3")) {
-					msgToResult(FromMessage,MessAgeUtil.ontherMenu());
+					imageTextToResult(FromMessage,
+							new Image("y7V5kzHL2jb7Hz6tMsYOEelcjrQyzw4hGv35hMJI67jrJc2jc_yQEZb4mE2gCmtJ"));
 				} else if (FromMessage.getContent().equals("4")) {
-					msgToResult(FromMessage,MessAgeUtil.ontherMenu());
+					musicTextToResult(FromMessage, InitMusicDbo.initMusic());
 				} else if (FromMessage.getContent().equals("5")) {
-					msgToResult(FromMessage,MessAgeUtil.ontherMenu());
+					msgToResult(FromMessage, MessAgeUtil.ontherMenu());
 				} else if (FromMessage.getContent().equals("？") || FromMessage.getContent().equals("help")) {
-					msgToResult(FromMessage,MessAgeUtil.showMenu());
+					msgToResult(FromMessage, MessAgeUtil.showMenu());
 				} else {
 					msgToResult(FromMessage, "没有该选项请重新输入");
 				}
@@ -130,12 +136,13 @@ public class WeiXinInitAction extends ActionSupport implements ModelDriven<WeiXi
 		}
 
 	}
-	//把文本消息转成流
+
+	// 把文本消息转成流
 	private void msgToResult(TextMessage textMsg, String content) {
 		textMsg.setContent(content);
-		
+
 		TextMessage MenuText = MessAgeUtil.initText(textMsg);
-		String xmlData=MessAgeUtil.textToXml(MenuText);
+		String xmlData = MessAgeUtil.textToXml(MenuText);
 		try {
 			bis = new ByteArrayInputStream(xmlData.getBytes("utf-8"));
 			return;
@@ -145,11 +152,42 @@ public class WeiXinInitAction extends ActionSupport implements ModelDriven<WeiXi
 		}
 		bis = null;
 	}
-	//把图文消息转换成流
-	private void msgNewsTextToResult(TextMessage textMessage,List<NewsItem> list)
-	{
-		NewsTextMessage message=MessAgeUtil.initNewText(textMessage, list);
-		String xmlData=MessAgeUtil.NewsTextToXml(message);
+
+	// 把图文消息转换成流
+	private void msgNewsTextToResult(TextMessage textMessage, List<NewsItem> list) {
+		NewsTextMessage message = MessAgeUtil.initNewText(textMessage, list);
+		String xmlData = MessAgeUtil.NewsTextToXml(message);
+
+		try {
+			bis = new ByteArrayInputStream(xmlData.getBytes("utf-8"));
+			return;
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		bis = null;
+	}
+
+	// 把图片消息转成流
+	private void imageTextToResult(TextMessage textMessage, Image image) {
+		ImageMessage message = MessAgeUtil.initImage(textMessage, image);
+		String xmlData = MessAgeUtil.imageToXml(message);
+		System.out.println(xmlData);
+		try {
+			bis = new ByteArrayInputStream(xmlData.getBytes("utf-8"));
+			return;
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		bis = null;
+	}
+
+	// 把音乐消息转成流
+	private void musicTextToResult(TextMessage textMessage, Music music) {
+		MusicMessage message = MessAgeUtil.initMusic(textMessage, music);
+		String xmlData = MessAgeUtil.musicToXml(message);
+		System.out.println(xmlData);
 		try {
 			bis = new ByteArrayInputStream(xmlData.getBytes("utf-8"));
 			return;

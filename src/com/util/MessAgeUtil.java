@@ -1,21 +1,44 @@
 package com.util;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.json.JsonObject;
 import javax.servlet.http.HttpServletRequest;
 
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
+import com.alibaba.fastjson.JSONObject;
+import com.job.AccessTokenManager;
+import com.job.MsgMeesage;
+import com.temp.Api_add_template;
+import com.temp.ThumbEntity;
 import com.thoughtworks.xstream.XStream;
+import com.wx.entitys.Image;
+import com.wx.entitys.ImageMessage;
+import com.wx.entitys.Music;
+import com.wx.entitys.MusicMessage;
 import com.wx.entitys.NewsItem;
 import com.wx.entitys.NewsTextMessage;
 import com.wx.entitys.TextMessage;
+import com.wx.entitys.WeiXinOpenUser;
+import com.wx.entitys.template.TemplateCtent;
+import com.wx.entitys.template.TemplateUser;
 
 public class MessAgeUtil {
 	public static final String MESSAGE_VIEW = "VIEW";
@@ -31,6 +54,7 @@ public class MessAgeUtil {
 	public static final String MESSAGE_TEXT = "text";
 	public static final String MESSAGE_IMAGE = "image";
 	public static final String MESSAGE_VOICE = "voice";
+	public static final String MESSAGE_MUSIC = "music";
 
 	// 把XML文件转为map集合
 	public static Map<String, String> xmlToMap(HttpServletRequest request) throws Exception {
@@ -136,5 +160,167 @@ public class MessAgeUtil {
 		String xmlStr = xStream.toXML(newsTextMessage);
 
 		return xmlStr;
+	}
+	//微信文件上传
+	public static String FileupLoad(String filePach,String accessToken,String type)throws Exception
+	{
+		String media_id=null;
+	
+		File file=new File(filePach);
+		if(!file.exists()||!file.isFile())
+		{
+			return media_id;
+		}
+		String upLoadurl="https://api.weixin.qq.com/cgi-bin/media/upload?access_token=ACCESS_TOKEN&type=TYPE";
+			
+		upLoadurl=upLoadurl.replace("ACCESS_TOKEN",accessToken);
+		upLoadurl=upLoadurl.replace("TYPE",type);
+		
+		URL urlObj=null;
+		urlObj=new URL(upLoadurl);
+		HttpURLConnection con=(HttpURLConnection) urlObj.openConnection();
+		con.setRequestMethod("POST");
+		con.setDoInput(true);
+		con.setDoOutput(true);
+		con.setUseCaches(false);
+		con.setRequestProperty("Connection", "Keep-Alive");
+		con.setRequestProperty("Charset", "UTF-8");
+		String BOUNDARY="---------------------------"+System.currentTimeMillis();
+		con.setRequestProperty("Content-Type", "multipart/form-data;boundary="+BOUNDARY);
+		StringBuffer sb=new StringBuffer();
+		sb.append("--");
+		sb.append(BOUNDARY);
+		sb.append("\r\n");
+		sb.append("Content-Disposition:form-data;name=\"file\";filename=\""+file.getName()+"\"\r\n");
+		sb.append("Content-Type:application/octet-stream\r\n\r\n");
+		
+		byte[] head=sb.toString().getBytes("utf-8");
+		OutputStream out=new  DataOutputStream(con.getOutputStream());
+		out.write(head);
+		DataInputStream in=new DataInputStream(new FileInputStream(file));
+		int bytes=0;
+		byte[] bufferOut=new byte[1024];
+		
+		while((bytes=in.read(bufferOut))!=-1)
+		{
+			
+			out.write(bufferOut,0,bytes);
+		}
+		in.close();
+		byte[] foot=("\r\n--"+BOUNDARY+"--\r\n").getBytes("utf-8");
+		out.write(foot);
+		out.flush();
+		out.close();
+		StringBuffer buffer=new StringBuffer();
+		BufferedReader reader=null;
+		String result=null;
+		reader =new BufferedReader(new InputStreamReader(con.getInputStream()));
+		String line=null;
+		while((line=reader.readLine())!=null)
+		{
+			buffer.append(line);
+			
+		}
+		if(result==null)
+		{
+			result=buffer.toString();
+		}
+		reader.close();
+		if(type.equals("image"))
+		{
+			MsgMeesage msg=JSONObject.parseObject(result,MsgMeesage.class);
+			media_id=msg.getMedia_id();
+		}
+		else if(type.equals("thumb"))
+		{
+			ThumbEntity thumbEntity=JSONObject.parseObject(result, ThumbEntity.class);
+			media_id=thumbEntity.getThumb_media_id();
+		}
+		
+		return media_id;
+	}
+	//初始化图片消息
+	public static ImageMessage initImage(TextMessage message,Image image)
+	{
+		ImageMessage imageMessage=new ImageMessage();
+		imageMessage.setFromUserName(message.getToUserName());
+		imageMessage.setToUserName(message.getFromUserName());
+		imageMessage.setMsgType(MessAgeUtil.MESSAGE_IMAGE);
+		imageMessage.setImage(image);
+		
+		imageMessage.setCreateTime(new Date().getTime() + "");
+		return imageMessage;
+	}
+	// 把图片消息转为XML
+	public static String imageToXml(ImageMessage imageMessage) {
+
+		XStream xStream = new XStream();
+		xStream.alias("xml", imageMessage.getClass());
+		xStream.alias("Image", imageMessage.getImage().getClass());
+		String xmlStr = xStream.toXML(imageMessage);
+		xmlStr=xmlStr.replaceAll("<image>", "<Image>");
+		xmlStr=xmlStr.replaceAll("</image>", "</Image>");
+		
+		return xmlStr;
+
+	}
+	//把音乐消息转成XML
+	public static String musicToXml(MusicMessage message)
+	{
+		XStream xStream = new XStream();
+		xStream.alias("xml", message.getClass());
+		xStream.alias("music", message.getMusic().getClass());
+		String xmlStr = xStream.toXML(message);
+		xmlStr=xmlStr.replaceAll("<music>", "<Music>");
+		xmlStr=xmlStr.replaceAll("</music>", "</Music>");
+		
+		return xmlStr;
+	}
+	//初始化音乐消息
+	public static MusicMessage initMusic(TextMessage message,Music music)
+	{
+
+		MusicMessage mm=new MusicMessage();
+		mm.setFromUserName(message.getToUserName());
+		mm.setToUserName(message.getFromUserName());
+		mm.setMsgType(MessAgeUtil.MESSAGE_MUSIC);
+		mm.setMusic(music);
+		mm.setCreateTime(new Date().getTime() + "");
+		return mm;
+		
+	}
+	//获得模板消息ID
+	public static String GetTemplate_id(String template_id,String accesToken)
+	{
+		String result=null;
+		String url="https://api.weixin.qq.com/cgi-bin/template/api_add_template?access_token=ACCESS_TOKEN";
+		template_id="{\"template_id_short\":\""+template_id+"\"}";
+		
+		url=url.replaceAll("ACCESS_TOKEN", accesToken);
+		result=HttpClientUtil.httpPost(url, template_id);
+		Api_add_template add_template=JSONObject.parseObject(result, Api_add_template.class);
+		
+		return add_template.getTemplate_id();
+	}
+	//获得用户列表
+	public static String[] getUserList(String access_token ,String  next_openid)
+	{
+		String url="https://api.weixin.qq.com/cgi-bin/user/get?access_token=ACCESS_TOKEN&next_openid=NEXT_OPENID";
+		url=url.replaceAll("ACCESS_TOKEN", access_token);
+		url=url.replaceAll("NEXT_OPENID", next_openid);
+		String result=HttpClientUtil.httpGet(url);
+		System.out.println(result);
+		WeiXinOpenUser list=JSONObject.parseObject(result, WeiXinOpenUser.class);
+		return list.getData().getOpenid();
+	}
+	public static String sendTemplate(String access_token ,TemplateUser templateUser)
+	{
+		String data=JSONObject.toJSONString(templateUser);
+		System.out.println(data);
+		String url="https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=ACCESS_TOKEN";
+		url=url.replaceAll("ACCESS_TOKEN", access_token);
+		String result=HttpClientUtil.httpPost(url, data);
+		System.out.println(result);
+		return null;
 	}
 }
